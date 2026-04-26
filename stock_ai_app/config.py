@@ -1,0 +1,2 @@
+ALPHA_VANTAGE_API_KEY = "D8CD3DS0OXOXXXYE"
+ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
