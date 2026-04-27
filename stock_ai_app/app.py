@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
 from services.yahoo_finance_client import YahooFinanceClient
+import yfinance as yf
 from ai_engines.engines import combined_score
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from services.smart_summary import generate_summary
 
 app = Flask(__name__)
 
@@ -47,16 +49,38 @@ def analyze():
             df = av_client.get_daily_series(symbol)
             scores = combined_score(df, date, symbol, yahoo_client)
             price = av_client.get_price_on_or_before(symbol, date)
+            
+            # ⭐ OBTENER INFORMACIÓN ADICIONAL (agrega esto)
+            info = yahoo_client.get_stock_info(symbol)  # Si tienes este método
+            sector = info.get("sector") if info else None
+            industry = info.get("industry") if info else None
+            
+            # Generar un resumen simple (o usa tu lógica existente)
+            summary = f"Análisis de {symbol} - Score total: {scores['total']:.3f}"
+            
+            # Obtener dominio para el logo
+            domain = f"{symbol.lower()}.com"  # Simplificado, ajusta según necesites
+                # df = av_client.get_daily_series(symbol)
+                # scores = combined_score(df, date, symbol, yahoo_client)
+                # price = av_client.get_price_on_or_before(symbol, date)
             results.append(
-                {
-                    "symbol": symbol,
-                    "price": round(price, 4),
-                    "ia1": round(scores["ia1"], 3),
-                    "ia2": round(scores["ia2"], 3),
-                    "ia3": round(scores["ia3"], 3),
-                    "total": round(scores["total"], 3),
-                }
-            )
+                    {
+                        "symbol": symbol,
+                        "price": round(price, 4),
+                        "ia1": round(scores["ia1"], 3),
+                        "ia2": round(scores["ia2"], 3),
+                        "ia3": round(scores["ia3"], 3),
+                        "ia4": round(scores["ia4"], 3),
+                        "ia5": round(scores["ia5"], 3),
+                        "ia6": round(scores["ia6"], 3),
+                        "total": round(scores["total"], 3),
+                        "summary": summary,
+                        "sector": info.get("sector"),
+                        "industry": info.get("industry"),
+                        "logo": f"https://logo.clearbit.com/{domain}" if domain else None,
+                    }
+                )
+
         except Exception as e:
             print("ERROR EN", symbol, ":", e)
             results.append(
@@ -65,6 +89,20 @@ def analyze():
                     "error": str(e),
                 }
             )
+        
+        info = yf.Ticker(symbol).info
+
+        summary = generate_summary(
+            symbol,
+            scores,
+            info
+        )
+
+        website = info.get("website")
+        domain = None
+        if website:
+            domain = website.replace("https://", "").replace("http://", "").split("/")[0]
+
 
     # Ordenamos por score total descendente
     results_sorted = sorted(
