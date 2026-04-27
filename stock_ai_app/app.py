@@ -12,7 +12,7 @@ limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["200 per 15 minutes"],  # 200 requests cada 15 minutos por IP real
-    forwarded_allow_ips="*"  # CLAVE: permite leer IP real desde el proxy de Render
+    storage_uri="memory://"  # Opcional: elimina la advertencia de memoria
 )
 
 
