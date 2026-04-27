@@ -2,8 +2,20 @@ from flask import Flask, render_template, request, jsonify
 from datetime import datetime
 from services.yahoo_finance_client import YahooFinanceClient
 from ai_engines.engines import combined_score
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
+
+# ⭐ CONFIGURACIÓN DE RATE LIMITING PARA RENDER
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per 15 minutes"],  # 200 requests cada 15 minutos por IP real
+    forwarded_allow_ips="*"  # CLAVE: permite leer IP real desde el proxy de Render
+)
+
+
 av_client = YahooFinanceClient()
 yahoo_client = YahooFinanceClient()
 
@@ -13,8 +25,8 @@ yahoo_client = YahooFinanceClient()
 def index():
     return render_template("index.html")
 
-
 @app.route("/analyze", methods=["POST"])
+@limiter.limit("30 per minute")  # ⭐ Limita a 30 requests por minuto por IP
 def analyze():
     data = request.get_json()
     tickers_raw = data.get("tickers", "")
