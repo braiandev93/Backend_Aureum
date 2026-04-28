@@ -66,16 +66,29 @@ class YahooFinanceClient:
 
         return df.iloc[-1]["close"]
     
-    def get_stock_info(self, symbol):
-        """Obtiene información del sector, industria, etc."""
-        try:
-            ticker = yf.Ticker(symbol)
-            info = ticker.info
-            return {
-                "sector": info.get("sector"),
-                "industry": info.get("industry"),
-                "website": info.get("website"),
-            }
-        except Exception as e:
-            print(f"Error obteniendo info de {symbol}: {e}")
-            return None
+    def get_stock_info(self, symbol, max_retries=2):
+        # """Obtiene información del sector, industria, etc. con reintentos."""
+        for intento in range(max_retries):
+            try:
+                ticker = yf.Ticker(symbol)
+                info = ticker.info
+                
+                if not info:
+                    raise ValueError(f"No se encontró información para {symbol}")
+                
+                return {
+                    "sector": info.get("sector"),
+                    "industry": info.get("industry"),
+                    "website": info.get("website"),
+                }
+                    
+            except Exception as e:
+                print(f"Intento {intento + 1}/{max_retries} - Error obteniendo info de {symbol}: {e}")
+                if intento < max_retries - 1:
+                    time.sleep(2)
+                else:
+                    return {
+                        "sector": None,
+                        "industry": None,
+                        "website": None,
+                    }
