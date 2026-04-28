@@ -1,0 +1,9 @@
+# Entorno virtual
+env/
+env.bak/
+__pycache__/
+*.pyc
+*.pyo
+*.so
+.env
+.venv

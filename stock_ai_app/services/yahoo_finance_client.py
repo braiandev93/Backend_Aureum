@@ -66,16 +66,16 @@ class YahooFinanceClient:
 
         return df.iloc[-1]["close"]
     
-def get_stock_info(self, symbol):
-    """Obtiene información del sector, industria, etc."""
-    try:
-        ticker = yf.Ticker(symbol)
-        info = ticker.info
-        return {
-            "sector": info.get("sector"),
-            "industry": info.get("industry"),
-            "website": info.get("website"),
-        }
-    except Exception as e:
-        print(f"Error obteniendo info de {symbol}: {e}")
-        return None
+    def get_stock_info(self, symbol):
+        """Obtiene información del sector, industria, etc."""
+        try:
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+            return {
+                "sector": info.get("sector"),
+                "industry": info.get("industry"),
+                "website": info.get("website"),
+            }
+        except Exception as e:
+            print(f"Error obteniendo info de {symbol}: {e}")
+            return None
