@@ -32,8 +32,6 @@ def index():
     return render_template("index.html")
 
 @app.route("/analyze", methods=["POST"])
-@limiter.limit("30 per minute")  # ⭐ Limita a 30 requests por minuto por IP
-@app.route("/analyze", methods=["POST"])
 @limiter.limit("30 per minute")
 def analyze():
     data = request.get_json()
@@ -59,8 +57,8 @@ def analyze():
             # Obtener información adicional
             info = yahoo_client.get_stock_info(symbol)
             
-            # Generar resumen (simple por ahora)
-            summary = f"Análisis de {symbol} - Score total: {scores['total']:.3f}"
+            # ⭐ GENERAR RESUMEN CON TU FUNCIÓN
+            summary = generate_summary(symbol, scores, info)
             
             # Obtener dominio para el logo
             domain = f"{symbol.lower()}.com"
@@ -88,11 +86,8 @@ def analyze():
                 "error": str(e),
             })
 
-    # Ordenamos por score total descendente
     results_sorted = sorted(results, key=lambda x: x.get("total", -1), reverse=True)
-    
     return jsonify({"results": results_sorted})
-
 
 if __name__ == "__main__":
     import os
