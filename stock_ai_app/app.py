@@ -6,6 +6,7 @@ from ai_engines.engines import combined_score
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from services.smart_summary import generate_summary
+import sys
 
 print("🚀 Iniciando app.py", flush=True)
 print(f"Python version: {sys.version}", flush=True)
