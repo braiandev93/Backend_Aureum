@@ -90,19 +90,30 @@ def fetch_price_from_yahoo(symbol: str):
 
 
 def fetch_fx_rate(from_currency: str, to_currency: str):
-    """Devuelve la tasa float USD->target o None. Usa exchangerate.host (sin API key)."""
+    """Devuelve la tasa float USD->target o None. Usa exchangerate.host y fallback."""
     if not from_currency or not to_currency or from_currency == to_currency:
         return 1.0
     try:
+        # API principal
         url = f"https://api.exchangerate.host/latest?base={from_currency}&symbols={to_currency}"
         r = requests.get(url, timeout=5)
-        if r.status_code != 200:
-            return None
-        data = r.json()
-        rate = data.get("rates", {}).get(to_currency)
-        return float(rate) if rate else None
+        if r.status_code == 200:
+            data = r.json()
+            rate = data.get("rates", {}).get(to_currency)
+            if rate:
+                return float(rate)
+
+        # Fallback si exchangerate.host falla
+        alt = requests.get(f"https://open.er-api.com/v6/latest/{from_currency}", timeout=5).json()
+        rate = alt.get("rates", {}).get(to_currency)
+        if rate:
+            return float(rate)
+
+        return None
+
     except Exception:
         return None
+
 
 
 def map_to_local_ticker(symbol: str, country: str):
@@ -193,11 +204,11 @@ def analyze():
 
             # 4) info adicional (si tenés yahoo_client)
             info = {}
-            if yahoo_client:
-                try:
-                    info = yahoo_client.get_stock_info(symbol) or {}
-                except Exception:
-                    info = {}
+            try:
+                t = yf.Ticker(symbol)
+                info = t.info or {}
+            except Exception:
+                info = {}
 
             # 5) summary (si existe la función)
             summary = None
