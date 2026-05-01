@@ -7,10 +7,8 @@ import sys
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from translations import bp as translations_bp
-app.register_blueprint(translations_bp)
 
 
-# Si tenés un cliente propio para AlphaVantage / Yahoo, mantenelo; si no, usamos yfinance directo.
 # from services.yahoo_finance_client import YahooFinanceClient
 # from ai_engines.engines import combined_score
 # from services.smart_summary import generate_summary
@@ -35,6 +33,7 @@ print("🚀 Iniciando app.py", flush=True)
 print(f"Python version: {sys.version}", flush=True)
 
 app = Flask(__name__)
+app.register_blueprint(translations_bp)
 
 # Rate limiter
 limiter = Limiter(
@@ -259,28 +258,28 @@ def analyze():
         print("RESULT sample:", results_sorted[0])
     return jsonify({"results": results_sorted})
 
-    @app.route("/convert", methods=["POST"])
-    def convert():
-        data = request.get_json(silent=True) or {}
-        amount = data.get("amount")
-        from_currency = data.get("from")
-        to_currency = data.get("to")
+@app.route("/convert", methods=["POST"])
+def convert():
+    data = request.get_json(silent=True) or {}
+    amount = data.get("amount")
+    from_currency = data.get("from")
+    to_currency = data.get("to")
 
-        if amount is None or from_currency is None or to_currency is None:
-            return jsonify({"error": "Faltan parámetros: amount, from, to"}), 400
+    if amount is None or from_currency is None or to_currency is None:
+        return jsonify({"error": "Faltan parámetros: amount, from, to"}), 400
 
-        fx = fetch_fx_rate(from_currency.upper(), to_currency.upper())
-        if fx is None:
-            return jsonify({"error": "No se pudo obtener la tasa de conversión"}), 500
+    fx = fetch_fx_rate(from_currency.upper(), to_currency.upper())
+    if fx is None:
+        return jsonify({"error": "No se pudo obtener la tasa de conversión"}), 500
 
-        result = round(amount * fx, 4)
-        return jsonify({
+    result = round(amount * fx, 4)
+    return jsonify({
             "amount": amount,
             "from": from_currency.upper(),
             "to": to_currency.upper(),
             "rate": fx,
             "result": result
-        })
+    })
 
 
 
