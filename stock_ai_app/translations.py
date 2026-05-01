@@ -56,3 +56,32 @@ def missing_key():
             save_locale(lang, data)
 
     return jsonify({"status": "ok"})
+
+@bp.route("/auto", methods=["POST"])
+def auto_translate():
+    payload = request.json
+    text = payload["text"]
+
+    result = {}
+
+    for lang in LANGUAGES:
+        data = load_locale(lang)
+
+        # Si ya existe, usarlo
+        if text in data:
+            result[lang] = data[text]
+            continue
+
+        # Si no existe, traducir
+        if lang == "es":
+            translated = text
+        else:
+            translated = translate_text(text, lang)
+
+        data[text] = translated
+        save_locale(lang, data)
+
+        result[lang] = translated
+
+    return jsonify(result)
+
