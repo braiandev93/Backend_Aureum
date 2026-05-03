@@ -281,6 +281,38 @@ def convert():
             "result": result
     })
 
+import yfinance as yf
+from flask import Blueprint, request, jsonify
+
+bp = Blueprint("stocks", __name__)
+
+@bp.route("/stocks/resolve", methods=["POST"])
+def resolve_stock():
+    data = request.get_json()
+    query = data.get("q", "").strip()
+
+    if not query:
+        return jsonify({"error": "Nombre o símbolo inválido"}), 400
+
+    try:
+        # Yahoo Finance search
+        results = yf.search(query)
+
+        if not results or "quotes" not in results or len(results["quotes"]) == 0:
+            return jsonify({"error": "No se encontró ninguna empresa con ese nombre"}), 404
+
+        # Tomamos el primer resultado relevante
+        for item in results["quotes"]:
+            if item.get("quoteType") == "EQUITY":
+                return jsonify({
+                    "symbol": item.get("symbol"),
+                    "name": item.get("shortname") or item.get("longname")
+                })
+
+        return jsonify({"error": "No se encontró ningún activo financiero válido"}), 404
+
+    except Exception as e:
+        return jsonify({"error": f"Error al buscar la empresa: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
