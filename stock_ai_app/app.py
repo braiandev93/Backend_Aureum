@@ -35,6 +35,12 @@ print(f"Python version: {sys.version}", flush=True)
 app = Flask(__name__)
 app.register_blueprint(translations_bp)
 
+# Custom session for yfinance to bypass Render blocks
+yf_session = requests.Session()
+yf_session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+})
+
 # Rate limiter
 limiter = Limiter(
     key_func=get_remote_address,
@@ -78,7 +84,7 @@ def fetch_price_from_yahoo(symbol: str):
     if not symbol:
         return None
     try:
-        t = yf.Ticker(symbol)
+        t = yf.Ticker(symbol, session=yf_session)
         hist = t.history(period="1d")
         if hist.empty:
             # intentar info regular
@@ -207,7 +213,7 @@ def analyze():
             # 4) info adicional (si tenés yahoo_client)
             info = {}
             try:
-                t = yf.Ticker(symbol)
+                t = yf.Ticker(symbol, session=yf_session)
                 info = t.info or {}
             except Exception:
                 info = {}
