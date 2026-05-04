@@ -122,6 +122,21 @@ def fetch_fx_rate(from_currency: str, to_currency: str):
     except Exception:
         return None
 
+def get_sector_industry_manual(symbol):
+    """Consulta directa a internet a la API de Yahoo, evadiendo bloqueos de yfinance."""
+    try:
+        import requests
+        s = requests.Session()
+        s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        s.get('https://fc.yahoo.com', timeout=5)
+        crumb = s.get('https://query1.finance.yahoo.com/v1/test/getcrumb', timeout=5).text
+        url = f'https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}?modules=summaryProfile&crumb={crumb}'
+        data = s.get(url, timeout=5).json()
+        prof = data.get('quoteSummary', {}).get('result', [{}])[0].get('summaryProfile', {})
+        return prof.get('sector'), prof.get('industry')
+    except Exception:
+        return None, None
+
 
 
 def map_to_local_ticker(symbol: str, country: str):
@@ -218,6 +233,15 @@ def analyze():
             except Exception:
                 info = {}
 
+            sector = info.get("sector")
+            industry = info.get("industry")
+            
+            # Si yfinance falla por culpa de Render, consultamos directo a internet
+            if not sector or not industry:
+                s_man, i_man = get_sector_industry_manual(symbol)
+                sector = sector or s_man
+                industry = industry or i_man
+
             # 5) summary (si existe la función)
             summary = None
             if generate_summary:
@@ -245,8 +269,8 @@ def analyze():
                 "ia6": round(scores.get("ia6", 0), 3) if isinstance(scores, dict) else None,
                 "total": round(scores.get("total", 0), 3) if isinstance(scores, dict) else None,
                 "summary": summary,
-                "sector": info.get("sector") if isinstance(info, dict) else None,
-                "industry": info.get("industry") if isinstance(info, dict) else None,
+                "sector": sector,
+                "industry": industry,
                 "logo": f"https://logo.clearbit.com/{domain}" if domain else None,
             })
 
