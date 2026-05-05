@@ -7,6 +7,10 @@ import sys
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from translations import bp as translations_bp
+from flask import request, jsonify
+from services.sectors import refresh_sector_universe, SECTOR_CACHE
+from services.scores import refresh_scores, SCORE_CACHE
+import random
 
 
 # from services.yahoo_finance_client import YahooFinanceClient
@@ -343,6 +347,78 @@ def resolve_stock():
 
     except Exception as e:
         return jsonify({"error": f"Error al buscar la empresa: {str(e)}"}), 500
+
+
+@app.route("/sectors/picks", methods=["POST"])
+def sectors_picks():
+    data = request.get_json(silent=True) or {}
+    sector = data.get("sector", "").strip()
+    mode = data.get("mode", "free")
+
+    if not sector:
+        return jsonify({"error": "Sector requerido"}), 400
+
+    refresh_sector_universe()
+    refresh_scores(SECTOR_CACHE)
+
+    symbols = SECTOR_CACHE.get(sector)
+    if not symbols:
+        return jsonify({"error": "Sector no encontrado"}), 404
+
+    scored = []
+    for symbol in symbols:
+        s = SCORE_CACHE.get(symbol)
+        if not s:
+            continue
+        scored.append({
+            "symbol": symbol,
+            "total": s["total"],
+            "ia1": s["ia1"],
+            "ia2": s["ia2"],
+            "ia3": s["ia3"],
+            "ia4": s["ia4"],
+            "ia5": s["ia5"],
+            "ia6": s["ia6"],
+        })
+
+    if not scored:
+        return jsonify({"error": "No hay datos suficientes"}), 404
+
+    scored_sorted = sorted(scored, key=lambda x: x["total"], reverse=True)
+
+    if mode == "premium":
+        picks = scored_sorted[:3]
+    else:
+        mid = len(scored_sorted) // 2
+        window = scored_sorted[max(0, mid - 10):min(len(scored_sorted), mid + 10)]
+        picks = random.sample(window, k=min(3, len(window)))
+
+    results = []
+    for item in picks:
+        symbol = item["symbol"]
+        try:
+            info = yf.Ticker(symbol).info or {}
+        except:
+            info = {}
+
+        domain = f"{symbol.lower()}.com"
+        results.append({
+            "symbol": symbol,
+            "total": round(item["total"], 3),
+            "ia1": item["ia1"],
+            "ia2": item["ia2"],
+            "ia3": item["ia3"],
+            "ia4": item["ia4"],
+            "ia5": item["ia5"],
+            "ia6": item["ia6"],
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
+            "logo": f"https://logo.clearbit.com/{domain}"
+        })
+
+    return jsonify({"results": results})
+
+
 
 
 if __name__ == "__main__":
