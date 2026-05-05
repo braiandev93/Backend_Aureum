@@ -8,14 +8,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from translations import bp as translations_bp
 from flask import request, jsonify
+from services.core import av_client, yahoo_client, combined_score, generate_summary
 from services.sectors import refresh_sector_universe, SECTOR_CACHE
 from services.scores import refresh_scores, SCORE_CACHE
 import random
 
 
-# from services.yahoo_finance_client import YahooFinanceClient
-# from ai_engines.engines import combined_score
-# from services.smart_summary import generate_summary
+
 
 # IMPORTS DE EJEMPLO (descomentar si existen en tu repo)
 try:

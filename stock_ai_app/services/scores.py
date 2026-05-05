@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from app import av_client, combined_score, yahoo_client
+from services.core import av_client, combined_score, yahoo_client
 
 SCORE_CACHE = {}
 SCORE_LAST_REFRESH = None
