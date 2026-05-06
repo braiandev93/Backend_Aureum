@@ -21,11 +21,22 @@ def translate_text(text, target_lang):
     return r.json()["translations"][0]["text"]
 
 def load_locale(lang):
-    path = os.path.join(LOCALES_DIR, f"{lang}.json")
+    path = f"locales/{lang}.json"
     if not os.path.exists(path):
         return {}
+
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        content = f.read().strip()
+
+        # Si el archivo está vacío → devolvemos un JSON vacío
+        if not content:
+            return {}
+
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # Si está corrupto o tiene HTML → devolvemos vacío
+            return {}
 
 def save_locale(lang, data):
     path = os.path.join(LOCALES_DIR, f"{lang}.json")
